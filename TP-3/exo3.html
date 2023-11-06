@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <style type="text/css">
+            .axis path,
+            .axis line {
+                fill: none;
+                stroke: black;            
+            } 
+            .axis text {
+                font-family: sans-serif;
+                font-size: 14px;
+            }
+        </style>
+    </head>
+    <body>
+    <script type="module">
+    import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm"; 
+    
+    const scatterData = (callback) => {
+  let file1 = d3.csv("us-productivity.csv");
+  let file2 = d3.csv("us-cities-top-1k.csv");
+
+  Promise.all([file1, file2]).then((data) => {
+    let data1 = data[0];
+    let data2 = data[1];
+
+    let dataset = data1.map((d) => {
+      const state = d.state;
+      const matchingCity = data2.find((d2) => d2.State === state);
+
+      if (matchingCity) {
+        return {
+          place: state,
+          population: parseInt(matchingCity.Population),
+          latitude: parseFloat(matchingCity.lat),
+          longitude: parseFloat(matchingCity.lon),
+          productivity: parseFloat(d.value),
+        };
+      }
+
+      return null;
+    });
+
+    dataset = dataset.filter((data) => data !== null);
+    callback(dataset);
+  });
+};
+
+    
+    scatterData((data) => {
+        d3.select("body").selectAll("p")
+        .data(data)
+        .enter()
+        .append("p")
+        .text((d) => {
+            return d.place+" "+d.population+" "+d.latitude+" "+d.longitude +" "+d.productivity ;
+        });  
+        
+        let h = 800;
+        let w = 1200;
+        let svg = d3.select("body")
+                    .append("svg")
+                    .attr("height", h)
+                    .attr("width", w);
+    
+        let padding = 30;
+        let xDomainMin = d3.min(data, (d) => {return d.longitude;});
+        let xDomainMax = d3.max(data, (d) => {return d.longitude;});
+        let xScale = d3.scaleLinear()
+                        .domain([xDomainMin-10, xDomainMax+10])
+                        .range([padding, w - padding]);
+                        
+        let yDomainMin = d3.min(data, (d) => {return d.latitude;});
+        let yDomainMax = d3.max(data, (d) => {return d.latitude;});
+        let yScale = d3.scaleLinear()
+                        .domain([yDomainMin-10, yDomainMax+10])
+                        .range([h - padding, padding]);    
+    
+        let rDomainMax = d3.max(data, (d) => {return d.population;});
+        let rDomainMin = d3.min(data, (d) => {return d.population;});
+        console.log(rDomainMax);
+       
+        let rScale = d3.scaleLinear()
+                        .domain([rDomainMin, rDomainMax])
+                        .range([5, 100]);
+    
+        let cScale = d3.scaleSequential(d3.interpolate("purple","yellow")) 
+                            .domain([rDomainMin, rDomainMax]);                        
+    
+        svg.selectAll("circle")
+            .data(data)
+            .enter()
+            .append("circle")    
+            .attr("cx", (d) => {return xScale(d.longitude); })
+            .attr("cy", (d) => {return yScale(d.latitude); })
+            .attr("r", (d) => {return rScale(d.population); })
+            .attr("fill", (d) => {return cScale(d.population); })
+    
+        svg.selectAll("text")
+            .data(data)
+            .enter()
+            .append("text")
+            .text((d) => {return d.place;})
+            .attr("x", (d) => {return xScale(d.longitude);})
+            .attr("y", (d) => {return yScale(d.latitude);})
+            .attr("fill", "black")
+            .attr("font-size", "14px")
+    
+        let xAxis = d3.axisBottom(xScale).ticks(10);
+        let yAxis = d3.axisLeft(yScale).ticks(10);
+    
+        svg.append("g")
+            .attr("class", "axis")
+            .attr("transform", "translate(0, "+ (h - padding) + ")")
+            .call(xAxis);
+    
+        svg.append("g")
+            .attr("class", "axis")
+            .attr("transform", "translate("+ padding + ", 0)")
+            .call(yAxis);
+    });
+    
+    </script>
+    </body>
+    </html>

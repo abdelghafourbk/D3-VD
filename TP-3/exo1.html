@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style type="text/css">
+        .axis path,
+        .axis line {
+            fill: none;
+            stroke: black;            
+        } 
+        .axis text {
+            font-family: sans-serif;
+            font-size: 8px;
+            
+        }
+    </style>
+</head>
+<body>
+    <script type="module">
+        import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm"; 
+        const scatterData = (callback) => {
+        d3.csv("us-cities-top-1k.csv").then((data) => {
+        let dataset = data.map((d) => {
+                                return {
+                                    state: d.State,
+                                    population: parseInt(d.Population)   
+                                };
+                        }); 
+        dataset = dataset.slice(10, 15);
+        callback(dataset);
+    });      
+};
+
+scatterData((data) => {
+    d3.select("body").selectAll("p")
+    .data(data)
+    .enter()
+    .append("p")
+    .text((d) => {
+        return d.state+" "+d.population;
+    });  
+    
+    let h = 700;
+    let w = 1000;
+    let svg = d3.select("body")
+                .append("svg")
+                .attr("height", h)
+                .attr("width", w);
+
+    let padding = 50;
+
+    let xScale = d3.scaleBand()
+        .domain(data.map(d => d.state)) 
+        .range([padding, w - padding]) 
+        .padding(0.1);
+    
+
+    let yDomainMin = d3.min(data, (d) => {return d.population;});
+    let yDomainMax = d3.max(data, (d) => {return d.population;});
+    let yScale = d3.scaleLinear()
+                    .domain([yDomainMin - yDomainMin *0.1 , yDomainMax + yDomainMax *0.1 ])
+                    .range([h- padding, padding]);
+    let cScale = d3.scaleSequential(d3.interpolate("yellow", "purple")) 
+                        .domain([yDomainMin, yDomainMax]); 
+ 
+
+    svg.selectAll("rect")
+        .data(data)
+        .enter()
+        .append("rect")    
+        .attr("x", (d) => {return xScale(d.state); })
+        .attr("y", (d) => {return yScale(d.population); })
+        .attr("width", function (d) { return h - padding - yScale(d.population); })
+        .attr("height", function (d) { return h - padding - yScale(d.population); })
+        //.attr("fill", "purple")
+        .attr("fill", (d) => {return cScale(d.population); })
+        .on("mouseover", function(event,d) {
+            d3.select(this).attr("fill", "orange");
+        })
+        .on("mouseout", function(event,d){
+            d3.select(this).attr("fill", (d) => cScale(d.population));
+        })
+
+
+    let xAxis = d3.axisBottom(xScale).ticks(45);
+    let yAxis = d3.axisLeft(yScale).ticks(10);
+
+    svg.append("g")
+        .attr("class", "axis")
+        .attr("transform", "translate(0, "+ (h - padding) + ")")
+        .call(xAxis)
+        .selectAll("text")
+        .attr("transform", "rotate(-45)")
+        .style("text-anchor", "end")
+        .attr("dx", "-.1em") // Adjust horizontal position
+        .attr("dy", ".4em");
+    
+
+    svg.append("g")
+        .attr("class", "axis")
+        .attr("transform", "translate("+ padding + ", 0)")
+        .call(yAxis);
+
+
+
+ 
+
+});
+
+    </script>
+    
+</body>
+</html>
