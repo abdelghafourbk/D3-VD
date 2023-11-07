@@ -83,12 +83,15 @@
         let rDomainMin = d3.min(data, (d) => {return d.population;});
         console.log(rDomainMax);
        
+        let pDomainMax = d3.max(data, (d) => {return d.productivity;});
+        let pDomainMin = d3.min(data, (d) => {return d.productivity;});
+
         let rScale = d3.scaleLinear()
                         .domain([rDomainMin, rDomainMax])
                         .range([5, 100]);
     
         let cScale = d3.scaleSequential(d3.interpolate("purple","yellow")) 
-                            .domain([rDomainMin, rDomainMax]);                        
+                            .domain([pDomainMin, pDomainMax]);                        
     
         svg.selectAll("circle")
             .data(data)
@@ -97,8 +100,12 @@
             .attr("cx", (d) => {return xScale(d.longitude); })
             .attr("cy", (d) => {return yScale(d.latitude); })
             .attr("r", (d) => {return rScale(d.population); })
-            .attr("fill", (d) => {return cScale(d.population); })
-    
+            .attr("fill", (d) => {return cScale(d.productivity); })
+            .append("title")
+            .text((d) => {return d.place}); 
+
+      
+
         svg.selectAll("text")
             .data(data)
             .enter()
@@ -108,7 +115,7 @@
             .attr("y", (d) => {return yScale(d.latitude);})
             .attr("fill", "black")
             .attr("font-size", "14px")
-    
+
         let xAxis = d3.axisBottom(xScale).ticks(10);
         let yAxis = d3.axisLeft(yScale).ticks(10);
     
@@ -121,7 +128,52 @@
             .attr("class", "axis")
             .attr("transform", "translate("+ padding + ", 0)")
             .call(yAxis);
-    });
+
+        //Legend colors bar
+        let defs = svg.append("defs");
+
+        let gradient = defs
+          .append("linearGradient")
+          .attr("id", "color-gradient")
+          .attr("x1", "0%")
+          .attr("x2", "0%")
+          .attr("y1", "0%")
+          .attr("y2", "100%");
+
+        gradient
+          .append("stop")
+          .attr("offset", "0%")
+          .attr("stop-color", cScale(pDomainMin)); 
+
+        gradient
+          .append("stop")
+          .attr("offset", "100%")
+          .attr("stop-color", cScale(pDomainMax)); 
+
+        
+        svg.append("rect")
+          .attr("x", w - padding) 
+          .attr("y", padding)
+          .attr("width", 20)
+          .attr("height", h - 2 * padding)
+          .style("fill", "url(#color-gradient)");
+
+      //labels for max  and min values
+        svg.append("text")
+          .attr("x", w - 30) 
+          .attr("y", padding)
+          .attr("font-size", "12px")
+          .text(pDomainMin);
+
+        svg.append("text")
+          .attr("x", w - 30) 
+          .attr("y", h - padding - 15) 
+          .attr("font-size", "12px")
+          .text(pDomainMax);
+          // console.log(pDomainMax);
+          // console.log(pDomainMin);
+          
+  });
     
     </script>
     </body>
